@@ -9,8 +9,8 @@ def get_inventory_hash(inventory_full_path)
   end
 end
 
-def run_local_command(command, wd = Dir.pwd)
-  stdout, stderr, status = Open3.capture3(command, chdir: wd)
+def run_local_command(command, wd = Dir.pwd, env = {})
+  stdout, stderr, status = Open3.capture3(env, command, chdir: wd)
   error_message = "Attempted to run\ncommand:'#{command}'\nstdout:#{stdout}\nstderr:#{stderr}"
   raise error_message unless status.to_i.zero?
   stdout
