@@ -43,7 +43,7 @@ end
 def configure_remoting(platform, remoting_config_path)
   if platform_uses_ssh(platform)
     command = "vagrant ssh-config > #{remoting_config_path}"
-    run_local_command(command, @vagrant_env, { 'RUBYLIB' => nil })
+    run_local_command(command, @vagrant_env, { 'RUBYLIB' => '' })
     remoting_config = Net::SSH::Config.load(remoting_config_path, 'default')
     case platform
     when %r{debian.*|ubuntu.*}
@@ -66,7 +66,7 @@ def configure_remoting(platform, remoting_config_path)
     end
   else
     command = "vagrant winrm-config > #{remoting_config_path}"
-    run_local_command(command, @vagrant_env, { 'RUBYLIB' => nil })
+    run_local_command(command, @vagrant_env, { 'RUBYLIB' => '' })
     remoting_config = Net::SSH::Config.load(remoting_config_path, 'default')
     # TODO: Delete remoting_config_path as it's no longer needed
     # TODO: It's possible we may want to configure WinRM on the target platform beyond the defaults
@@ -84,7 +84,7 @@ def provision(platform, inventory_location, enable_synced_folder, hyperv_vswitch
   generate_vagrantfile(File.join(@vagrant_env, 'Vagrantfile'), platform, enable_synced_folder, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
   provider = on_windows? ? 'hyperv' : 'virtualbox'
   command = "vagrant up --provider #{provider}"
-  run_local_command(command, @vagrant_env, { 'RUBYLIB' => nil })
+  run_local_command(command, @vagrant_env, { 'RUBYLIB' => '' })
   vm_id = File.read(File.join(@vagrant_env, '.vagrant', 'machines', 'default', provider, 'index_uuid'))
 
   remote_config_file = platform_uses_ssh(platform) ? File.join(@vagrant_env, 'ssh-config') : File.join(@vagrant_env, 'winrm-config')
@@ -146,7 +146,7 @@ def tear_down(node_name, inventory_location)
   if File.file?(inventory_full_path)
     inventory_hash = inventory_hash_from_inventory_file(inventory_full_path)
     vagrant_env = facts_from_node(inventory_hash, node_name)['vagrant_env']
-    run_local_command(command, vagrant_env, { 'RUBYLIB' => nil })
+    run_local_command(command, vagrant_env, { 'RUBYLIB' => '' })
     remove_node(inventory_hash, node_name)
     FileUtils.rm_r(vagrant_env)
   end
