@@ -23,7 +23,7 @@ def supports_windows_platform?
   vagrant_version >= Gem::Version.new('2.2.0')
 end
 
-def generate_vagrantfile(file_path, platform, enable_synced_folder, provider, cpus, memory, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
+def generate_vagrantfile(file_path, platform, enable_synced_folder, provider, cpus, memory, private_network, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
   unless enable_synced_folder
     synced_folder = 'config.vm.synced_folder ".", "/vagrant", disabled: true'
   end
@@ -33,6 +33,10 @@ def generate_vagrantfile(file_path, platform, enable_synced_folder, provider, cp
     if enable_synced_folder && !hyperv_smb_username.nil? && !hyperv_smb_password.nil?
       synced_folder = "config.vm.synced_folder '.', '/vagrant', type: 'smb', smb_username: '#{hyperv_smb_username}', smb_password: '#{hyperv_smb_password}'"
     end
+  end
+  if private_network
+    network ||= ""
+    network += "\n  config.vm.network \"private_network\", type: \"dhcp\""
   end
   if cpus.nil? && memory.nil?
     provider_config_block = ''
@@ -104,7 +108,7 @@ def configure_remoting(platform, remoting_config_path)
   remoting_config
 end
 
-def provision(platform, inventory_location, enable_synced_folder, provider, cpus, memory, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
+def provision(platform, inventory_location, enable_synced_folder, provider, cpus, memory, private_network, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
   if platform_is_windows?(platform) && !supports_windows_platform?
     raise "To provision a Windows VM with this task you must have vagrant 2.2.0 or later installed; vagrant seems to be installed at v#{vagrant_version}"
   end
@@ -118,7 +122,7 @@ def provision(platform, inventory_location, enable_synced_folder, provider, cpus
   vagrant_dirs = Dir.glob("#{File.join(inventory_location, '.vagrant')}/*/").map { |d| File.basename(d) }
   @vagrant_env = File.expand_path(File.join(inventory_location, '.vagrant', get_vagrant_dir(platform, vagrant_dirs)))
   FileUtils.mkdir_p @vagrant_env
-  generate_vagrantfile(File.join(@vagrant_env, 'Vagrantfile'), platform, enable_synced_folder, provider, cpus, memory, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
+  generate_vagrantfile(File.join(@vagrant_env, 'Vagrantfile'), platform, enable_synced_folder, provider, cpus, memory, private_network, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password)
   command = "vagrant up --provider #{provider}"
   run_local_command(command, @vagrant_env)
   vm_id = File.read(File.join(@vagrant_env, '.vagrant', 'machines', 'default', provider, 'index_uuid'))
@@ -204,6 +208,7 @@ end
 provider            = params['provider'].nil? ? ENV['VAGRANT_PROVIDER'] : params['provider']
 cpus                = params['cpus'].nil? ? ENV['VAGRANT_CPUS'] : params['cpus']
 memory              = params['memory'].nil? ? ENV['VAGRANT_MEMORY'] : params['memory']
+private_network     = params['private_network'].nil? ? ENV['VAGRANT_PRIVATE_NETWORK'] : params['private_network']
 hyperv_vswitch      = params['hyperv_vswitch'].nil? ? ENV['VAGRANT_HYPERV_VSWITCH'] : params['hyperv_vswitch']
 hyperv_smb_username = params['hyperv_smb_username'].nil? ? ENV['VAGRANT_HYPERV_SMB_USERNAME'] : params['hyperv_smb_username']
 hyperv_smb_password = params['hyperv_smb_password'].nil? ? ENV['VAGRANT_HYPERV_SMB_PASSWORD'] : params['hyperv_smb_password']
@@ -221,7 +226,7 @@ unless node_name.nil? ^ platform.nil?
 end
 
 begin
-  result = provision(platform, inventory_location, enable_synced_folder, provider, cpus, memory, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password) if action == 'provision'
+  result = provision(platform, inventory_location, enable_synced_folder, provider, cpus, memory, private_network, hyperv_vswitch, hyperv_smb_username, hyperv_smb_password) if action == 'provision'
   result = tear_down(node_name, inventory_location) if action == 'tear_down'
   puts result.to_json
   exit 0

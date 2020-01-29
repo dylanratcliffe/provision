@@ -32,6 +32,11 @@
       "description": "MB Memory. Eg 4000",
       "type": "Optional[Integer]"
     },
+    "private_network": {
+      "description": "Whether to use the default vagrant private network as well as NAT",
+      "type": "Optional[Boolean]",
+      "default": false
+    },
     "hyperv_vswitch": {
       "description": "The Hyper-V virtual switch to spin the vagrant image up on",
       "type": "Optional[String[1]]",
